@@ -1,76 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TradingView Charts Grid</title>
-  <style>
-    /* Grid container */
-    .grid-container {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr); /* 3 columns */
-      grid-gap: 10px; /* Gap between charts */
-      width: 100%; /* Full width */
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradingView 3x3 Grid</title>
+    <style>
+        /* Flexbox layout for the grid */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, auto);
+            gap: 10px;
+        }
 
-    /* Chart container with aspect ratio 1.5:1 */
-    .chart-container {
-      position: relative;
-      width: 100%; /* Full width of grid cell */
-      padding-top: 66.66%; /* 1.5:1 aspect ratio (100/1.5 = 66.66%) */
-    }
+        /* Style for each chart container */
+        .tradingview-widget-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 66.67%; /* Aspect ratio of 1.5x1 (height is 66.67% of width) */
+            height: 0;
+        }
 
-    /* Actual TradingView widget */
-    .chart-container iframe {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-  </style>
+        /* Make the widget fill the container */
+        .tradingview-widget-container__widget {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
 </head>
 <body>
-  <div class="grid-container">
-    <!-- 9 Charts -->
-    <div class="chart-container">
-      <div class="tradingview-widget-container">
-        <div id="tradingview_1"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-        {
-          "autosize": true,
-          "symbol": "MEXC:BTCUSDT.P",
-          "interval": "D",
-          "timezone": "Etc/UTC",
-          "theme": "light",
-          "style": "1",
-          "locale": "en",
-          "allow_symbol_change": true,
-          "calendar": false
-        }
-        </script>
-      </div>
-    </div>
-    <!-- Repeat the above block 8 more times -->
-    <div class="chart-container">
-      <div class="tradingview-widget-container">
-        <div id="tradingview_2"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-        {
-          "autosize": true,
-          "symbol": "MEXC:BTCUSDT.P",
-          "interval": "D",
-          "timezone": "Etc/UTC",
-          "theme": "light",
-          "style": "1",
-          "locale": "en",
-          "allow_symbol_change": true,
-          "calendar": false
-        }
-        </script>
-      </div>
-    </div>
-    <!-- Add 7 more chart-container blocks similarly -->
-  </div>
+
+<div class="grid-container" id="grid-container"></div>
+
+<script>
+    const gridContainer = document.getElementById('grid-container');
+
+    // Symbols for TradingView widgets
+    const symbols = [
+        "MEXC:BTCUSDT.P", "MEXC:ETHUSDT.P", "MEXC:BNBUSDT.P",
+        "MEXC:XRPUSDT.P", "MEXC:ADAUSDT.P", "MEXC:DOGEUSDT.P",
+        "MEXC:SOLUSDT.P", "MEXC:MATICUSDT.P", "MEXC:DOTUSDT.P"
+    ];
+
+    // Function to create TradingView widget
+    function createTradingViewWidget(symbol) {
+        const container = document.createElement('div');
+        container.classList.add('tradingview-widget-container');
+
+        const widget = document.createElement('div');
+        widget.classList.add('tradingview-widget-container__widget');
+        container.appendChild(widget);
+
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+        script.async = true;
+        script.innerHTML = JSON.stringify({
+            autosize: true,
+            symbol: symbol,
+            interval: "D",
+            timezone: "Etc/UTC",
+            theme: "light",
+            style: "1",
+            locale: "en",
+            allow_symbol_change: true,
+            calendar: false,
+            support_host: "https://www.tradingview.com"
+        });
+
+        container.appendChild(script);
+        return container;
+    }
+
+    // Generate widgets for all symbols
+    symbols.forEach(symbol => {
+        const widgetElement = createTradingViewWidget(symbol);
+        gridContainer.appendChild(widgetElement);
+    });
+</script>
+
 </body>
 </html>
