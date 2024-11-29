@@ -3,25 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TradingView 3x3 Grid</title>
+    <title>TradingView 3x3 Grid with Checkboxes</title>
     <style>
-        /* Flexbox layout for the grid */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+        }
+
         .grid-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(auto-fill, auto);
+            grid-auto-rows: auto;
             gap: 10px;
         }
 
-        /* Style for each chart container */
         .tradingview-widget-container {
             position: relative;
             width: 100%;
-            padding-bottom: 66.67%; /* Aspect ratio of 1.5x1 (height is 66.67% of width) */
+            padding-bottom: 66.67%; /* Aspect ratio of 1.5x1 */
             height: 0;
         }
 
-        /* Make the widget fill the container */
         .tradingview-widget-container__widget {
             position: absolute;
             top: 0;
@@ -30,104 +36,88 @@
             height: 100%;
         }
 
-        /* Styling for the input section */
-        .controls {
-            margin-bottom: 20px;
-        }
-
-        .controls input {
-            padding: 8px;
-            width: 300px;
-            margin-right: 10px;
-        }
-
-        .controls button {
-            padding: 8px 12px;
-            cursor: pointer;
+        .checkbox-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
     </style>
 </head>
 <body>
 
-<!-- Input section for updating symbols -->
+<h1>TradingView Grid with Selectable Symbols</h1>
+
 <div class="controls">
-    <input type="text" id="symbol-input" placeholder="Enter symbols (comma-separated)">
-    <button id="update-symbols">Update Symbols</button>
+    <h3>Select Symbols to Display:</h3>
+    <div class="checkbox-list">
+        <label><input type="checkbox" class="symbol-checkbox" value="MEXC:BTCUSDT.P" checked> MEXC:BTCUSDT.P</label>
+        <label><input type="checkbox" class="symbol-checkbox" value="MEXC:ETHUSDT.P"> MEXC:ETHUSDT.P</label>
+        <label><input type="checkbox" class="symbol-checkbox" value="MEXC:BNBUSDT.P"> MEXC:BNBUSDT.P</label>
+        <label><input type="checkbox" class="symbol-checkbox" value="MEXC:SOLUSDT.P"> MEXC:SOLUSDT.P</label>
+        <label><input type="checkbox" class="symbol-checkbox" value="MEXC:XRPUSDT.P"> MEXC:XRPUSDT.P</label>
+        <label><input type="checkbox" class="symbol-checkbox" value="MEXC:FTMUSDT.P"> MEXC:FTMUSDT.P</label>
+        <label><input type="checkbox" class="symbol-checkbox" value="MEXC:FETUSDT.P"> MEXC:FETUSDT.P</label>
+    </div>
 </div>
 
-<!-- Grid container for TradingView widgets -->
-<div class="grid-container" id="grid-container"></div>
+<div class="grid-container" id="chartGrid"></div>
 
 <script>
-    const gridContainer = document.getElementById('grid-container');
-    const symbolInput = document.getElementById('symbol-input');
-    const updateButton = document.getElementById('update-symbols');
-
-    // Default symbols for TradingView widgets
-    let symbols = [
-        "MEXC:BTCUSDT.P", "MEXC:ETHUSDT.P", "MEXC:BNBUSDT.P",
-        "MEXC:XRPUSDT.P", "MEXC:ADAUSDT.P", "MEXC:DOGEUSDT.P",
-        "MEXC:SOLUSDT.P", "MEXC:MATICUSDT.P", "MEXC:DOTUSDT.P"
+    // Predefined symbols and default selection
+    const symbols = [
+        "MEXC:BTCUSDT.P",
+        "MEXC:ETHUSDT.P",
+        "MEXC:BNBUSDT.P",
+        "MEXC:SOLUSDT.P",
+        "MEXC:XRPUSDT.P",
+        "MEXC:FTMUSDT.P",
+        "MEXC:FETUSDT.P"
     ];
+    const defaultSymbols = ["MEXC:BTCUSDT.P"];
 
-    // Function to clear existing widgets
-    function clearWidgets() {
-        gridContainer.innerHTML = '';
-    }
+    // DOM references
+    const chartGrid = document.getElementById("chartGrid");
+    const checkboxes = document.querySelectorAll(".symbol-checkbox");
 
-    // Function to create TradingView widget
-    function createTradingViewWidget(symbol) {
-        const container = document.createElement('div');
-        container.classList.add('tradingview-widget-container');
-
-        const widget = document.createElement('div');
-        widget.classList.add('tradingview-widget-container__widget');
-        container.appendChild(widget);
-
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
-        script.async = true;
-        script.innerHTML = JSON.stringify({
-            autosize: true,
-            symbol: symbol,
-            interval: "D",
-            timezone: "Etc/UTC",
-            theme: "light",
-            style: "1",
-            locale: "en",
-            allow_symbol_change: true,
-            calendar: false,
-            support_host: "https://www.tradingview.com"
-        });
-
-        container.appendChild(script);
-        return container;
-    }
-
-    // Function to generate widgets based on the symbol list
-    function generateWidgets() {
-        clearWidgets();
-        symbols.forEach(symbol => {
-            const widgetElement = createTradingViewWidget(symbol);
-            gridContainer.appendChild(widgetElement);
+    // Function to render charts
+    function renderCharts(selectedSymbols) {
+        chartGrid.innerHTML = ""; // Clear existing charts
+        selectedSymbols.forEach(symbol => {
+            const chartContainer = document.createElement("div");
+            chartContainer.className = "tradingview-widget-container";
+            chartContainer.innerHTML = `
+                <div class="tradingview-widget-container__widget"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+                {
+                    "autosize": true,
+                    "symbol": "${symbol}",
+                    "interval": "D",
+                    "timezone": "Etc/UTC",
+                    "theme": "light",
+                    "style": "1",
+                    "locale": "en",
+                    "allow_symbol_change": true,
+                    "calendar": false,
+                    "support_host": "https://www.tradingview.com"
+                }
+                </script>
+            `;
+            chartGrid.appendChild(chartContainer);
         });
     }
 
-    // Event listener for updating symbols
-    updateButton.addEventListener('click', () => {
-        const userInput = symbolInput.value.trim();
-        if (userInput) {
-            // Update the symbols array based on user input
-            symbols = userInput.split(',').map(symbol => symbol.trim());
-            generateWidgets();
-        } else {
-            alert("Please enter valid symbols separated by commas.");
-        }
+    // Initialize with default symbols
+    renderCharts(defaultSymbols);
+
+    // Event listener for checkbox changes
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener("change", () => {
+            const selectedSymbols = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+            renderCharts(selectedSymbols);
+        });
     });
-
-    // Initial widget generation
-    generateWidgets();
 </script>
 
 </body>
