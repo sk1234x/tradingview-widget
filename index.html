@@ -14,6 +14,17 @@
             margin-bottom: 20px;
         }
 
+        .checkbox-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .checkbox-item {
+            display: inline-block;
+            white-space: nowrap;
+        }
+
         .grid-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -35,12 +46,6 @@
             width: 100%;
             height: 100%;
         }
-
-        .checkbox-list {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
     </style>
 </head>
 <body>
@@ -50,13 +55,13 @@
 <div class="controls">
     <h3>Select Symbols to Display:</h3>
     <div class="checkbox-list">
-        <label><input type="checkbox" class="symbol-checkbox" value="MEXC:BTCUSDT.P" checked> MEXC:BTCUSDT.P</label>
-        <label><input type="checkbox" class="symbol-checkbox" value="MEXC:ETHUSDT.P"> MEXC:ETHUSDT.P</label>
-        <label><input type="checkbox" class="symbol-checkbox" value="MEXC:BNBUSDT.P"> MEXC:BNBUSDT.P</label>
-        <label><input type="checkbox" class="symbol-checkbox" value="MEXC:SOLUSDT.P"> MEXC:SOLUSDT.P</label>
-        <label><input type="checkbox" class="symbol-checkbox" value="MEXC:XRPUSDT.P"> MEXC:XRPUSDT.P</label>
-        <label><input type="checkbox" class="symbol-checkbox" value="MEXC:FTMUSDT.P"> MEXC:FTMUSDT.P</label>
-        <label><input type="checkbox" class="symbol-checkbox" value="MEXC:FETUSDT.P"> MEXC:FETUSDT.P</label>
+        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:BTCUSDT.P" checked> MEXC:BTCUSDT.P</label>
+        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:ETHUSDT.P"> MEXC:ETHUSDT.P</label>
+        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:BNBUSDT.P"> MEXC:BNBUSDT.P</label>
+        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:SOLUSDT.P"> MEXC:SOLUSDT.P</label>
+        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:XRPUSDT.P"> MEXC:XRPUSDT.P</label>
+        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:FTMUSDT.P"> MEXC:FTMUSDT.P</label>
+        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:FETUSDT.P"> MEXC:FETUSDT.P</label>
     </div>
 </div>
 
