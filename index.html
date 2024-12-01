@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Responsive TradingView Grid</title>
+    <title>TradingView Grid with Persistent State</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -34,7 +34,7 @@
         .tradingview-widget-container {
             position: relative;
             width: 100%;
-            padding-bottom: 66.67%; /* Aspect ratio of 1.5x1 */
+            padding-bottom: 66.67%;
             height: 0;
         }
 
@@ -48,6 +48,10 @@
 
         .input-box, .interval-box {
             margin-top: 15px;
+        }
+
+        .copy-url {
+            margin-top: 20px;
         }
 
         @media (max-width: 768px) {
@@ -67,18 +71,16 @@
 </head>
 <body>
 
-<h1>TradingView Grid with Selectable Symbols</h1>
+<h1>TradingView Grid with Persistent State</h1>
 
 <div class="controls">
     <h3>Select Symbols to Display:</h3>
     <div class="checkbox-list">
-        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:BTCUSDT.P" checked> MEXC:BTCUSDT.P</label>
+        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:BTCUSDT.P"> MEXC:BTCUSDT.P</label>
         <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:ETHUSDT.P"> MEXC:ETHUSDT.P</label>
         <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:BNBUSDT.P"> MEXC:BNBUSDT.P</label>
         <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:SOLUSDT.P"> MEXC:SOLUSDT.P</label>
         <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:XRPUSDT.P"> MEXC:XRPUSDT.P</label>
-        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:FTMUSDT.P"> MEXC:FTMUSDT.P</label>
-        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:FETUSDT.P"> MEXC:FETUSDT.P</label>
     </div>
 
     <div class="input-box">
@@ -91,39 +93,55 @@
         <input type="text" id="intervalInput" placeholder="e.g., 1, 5, 15, 60, D, W, M" style="width: 100%; padding: 8px;">
         <small>Available values: 1 (1 min), 5 (5 mins), 15 (15 mins), 60 (1 hour), D (daily), W (weekly), M (monthly)</small>
     </div>
+
+    <button class="copy-url" onclick="copyURL()">Copy URL</button>
 </div>
 
 <div class="grid-container" id="chartGrid"></div>
 
 <script>
-    // Predefined symbols and default selection
-    const symbols = [
-        "MEXC:BTCUSDT.P",
-        "MEXC:ETHUSDT.P",
-        "MEXC:BNBUSDT.P",
-        "MEXC:SOLUSDT.P",
-        "MEXC:XRPUSDT.P",
-        "MEXC:FTMUSDT.P",
-        "MEXC:FETUSDT.P"
-    ];
-    const defaultSymbols = ["MEXC:BTCUSDT.P"];
-    let globalInterval = "D"; // Default interval
+    const urlParams = new URLSearchParams(window.location.search);
 
-    // DOM references
     const chartGrid = document.getElementById("chartGrid");
     const checkboxes = document.querySelectorAll(".symbol-checkbox");
     const symbolInput = document.getElementById("symbolInput");
     const intervalInput = document.getElementById("intervalInput");
 
-    // Function to render charts
-    function renderCharts(selectedSymbols) {
-        chartGrid.innerHTML = ""; // Clear existing charts
-        selectedSymbols.forEach(symbol => {
+    let globalInterval = urlParams.get("interval") || "D";
+
+    function parseURLParams() {
+        const symbolsFromURL = urlParams.get("symbols")?.split(",") || [];
+        const additionalSymbolsFromURL = urlParams.get("additionalSymbols") || "";
+        globalInterval = urlParams.get("interval") || "D";
+
+        // Update checkboxes
+        checkboxes.forEach(cb => {
+            cb.checked = symbolsFromURL.includes(cb.value);
+        });
+
+        // Update input values
+        symbolInput.value = additionalSymbolsFromURL;
+        intervalInput.value = globalInterval;
+    }
+
+    function renderCharts() {
+        const selectedSymbols = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        const additionalSymbols = symbolInput.value
+            .split(",")
+            .map(s => s.trim())
+            .filter(s => s);
+
+        const allSymbols = [...selectedSymbols, ...additionalSymbols];
+
+        chartGrid.innerHTML = ""; // Clear previous charts
+        allSymbols.forEach(symbol => {
             const chartContainer = document.createElement("div");
             chartContainer.className = "tradingview-widget-container";
             const widgetScript = document.createElement("script");
             widgetScript.type = "text/javascript";
-            widgetScript.async = true;
             widgetScript.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
             widgetScript.innerHTML = JSON.stringify({
                 autosize: true,
@@ -131,50 +149,55 @@
                 interval: globalInterval,
                 timezone: "Asia/Kolkata",
                 theme: "light",
-                style: "1",
                 locale: "en",
                 allow_symbol_change: true,
-                calendar: false
             });
             chartContainer.appendChild(widgetScript);
             chartGrid.appendChild(chartContainer);
         });
     }
 
-    // Event listener for checkbox changes
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener("change", updateCharts);
-    });
-
-    // Event listener for input box
-    symbolInput.addEventListener("input", updateCharts);
-
-    // Event listener for interval input box
-    intervalInput.addEventListener("input", () => {
-        const newInterval = intervalInput.value.trim();
-        if (newInterval.length > 0) {
-            globalInterval = newInterval; // Update global interval
-            updateCharts();
-        }
-    });
-
-    // Function to update charts based on selected checkboxes and input box
-    function updateCharts() {
-        const selectedSymbolsFromCheckboxes = Array.from(checkboxes)
+    function updateURL() {
+        const selectedSymbols = Array.from(checkboxes)
             .filter(cb => cb.checked)
             .map(cb => cb.value);
 
-        const additionalSymbols = symbolInput.value
-            .split(",")
-            .map(symbol => symbol.trim())
-            .filter(symbol => symbol.length > 0);
+        const additionalSymbols = symbolInput.value;
+        const newURL = new URL(window.location.href);
+        newURL.searchParams.set("symbols", selectedSymbols.join(","));
+        newURL.searchParams.set("additionalSymbols", additionalSymbols);
+        newURL.searchParams.set("interval", intervalInput.value);
 
-        const allSelectedSymbols = [...selectedSymbolsFromCheckboxes, ...additionalSymbols];
-        renderCharts(allSelectedSymbols);
+        history.replaceState({}, "", newURL.toString());
     }
 
-    // Initialize with default symbols
-    renderCharts(defaultSymbols);
+    function copyURL() {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            alert("URL copied to clipboard!");
+        });
+    }
+
+    // Event listeners
+    checkboxes.forEach(cb => cb.addEventListener("change", () => {
+        updateURL();
+        renderCharts();
+    }));
+
+    symbolInput.addEventListener("input", () => {
+        updateURL();
+        renderCharts();
+    });
+
+    intervalInput.addEventListener("input", () => {
+        globalInterval = intervalInput.value.trim() || "D";
+        updateURL();
+        renderCharts();
+    });
+
+    // Initial load
+    parseURLParams();
+    renderCharts();
 </script>
 
 </body>
