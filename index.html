@@ -1,76 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TradingView Charts Grid</title>
-  <style>
-    /* Grid container */
-    .grid-container {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr); /* 3 columns */
-      grid-gap: 10px; /* Gap between charts */
-      width: 100%; /* Full width */
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradingView Grid with Persistent State</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
 
-    /* Chart container with aspect ratio 1.5:1 */
-    .chart-container {
-      position: relative;
-      width: 100%; /* Full width of grid cell */
-      padding-top: 66.66%; /* 1.5:1 aspect ratio (100/1.5 = 66.66%) */
-    }
+        .controls {
+            margin-bottom: 20px;
+        }
 
-    /* Actual TradingView widget */
-    .chart-container iframe {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-  </style>
+        .checkbox-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .checkbox-item {
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 10px;
+        }
+
+        .tradingview-widget-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 66.67%;
+            height: 0;
+        }
+
+        .tradingview-widget-container__widget {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .input-box, .interval-box {
+            margin-top: 15px;
+        }
+
+        .copy-url {
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: repeat(auto-fit, minmax(100%, 1fr));
+            }
+
+            .checkbox-list {
+                flex-direction: column;
+            }
+
+            .input-box, .interval-box {
+                margin-top: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="grid-container">
-    <!-- 9 Charts -->
-    <div class="chart-container">
-      <div class="tradingview-widget-container">
-        <div id="tradingview_1"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-        {
-          "autosize": true,
-          "symbol": "MEXC:BTCUSDT.P",
-          "interval": "D",
-          "timezone": "Etc/UTC",
-          "theme": "light",
-          "style": "1",
-          "locale": "en",
-          "allow_symbol_change": true,
-          "calendar": false
-        }
-        </script>
-      </div>
+
+<h1>TradingView Grid with Persistent State</h1>
+
+<div class="controls">
+    <h3>Select Symbols to Display:</h3>
+    <div class="checkbox-list">
+        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:BTCUSDT.P"> MEXC:BTCUSDT.P</label>
+        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:ETHUSDT.P"> MEXC:ETHUSDT.P</label>
+        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:BNBUSDT.P"> MEXC:BNBUSDT.P</label>
+        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:SOLUSDT.P"> MEXC:SOLUSDT.P</label>
+        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:XRPUSDT.P"> MEXC:XRPUSDT.P</label>
     </div>
-    <!-- Repeat the above block 8 more times -->
-    <div class="chart-container">
-      <div class="tradingview-widget-container">
-        <div id="tradingview_2"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-        {
-          "autosize": true,
-          "symbol": "MEXC:BTCUSDT.P",
-          "interval": "D",
-          "timezone": "Etc/UTC",
-          "theme": "light",
-          "style": "1",
-          "locale": "en",
-          "allow_symbol_change": true,
-          "calendar": false
-        }
-        </script>
-      </div>
+
+    <div class="input-box">
+        <h3>Enter Additional Symbols (Comma Separated):</h3>
+        <input type="text" id="symbolInput" placeholder="e.g., MEXC:DOGEUSDT.P, MEXC:SHIBUSDT.P" style="width: 100%; padding: 8px;">
     </div>
-    <!-- Add 7 more chart-container blocks similarly -->
-  </div>
+
+    <div class="interval-box">
+        <h3>Set Global Interval:</h3>
+        <input type="text" id="intervalInput" placeholder="e.g., 1, 5, 15, 60, D, W, M" style="width: 100%; padding: 8px;">
+        <small>Available values: 1 (1 min), 5 (5 mins), 15 (15 mins), 60 (1 hour), D (daily), W (weekly), M (monthly)</small>
+    </div>
+
+    <button class="copy-url" onclick="copyURL()">Copy URL</button>
+</div>
+
+<div class="grid-container" id="chartGrid"></div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const chartGrid = document.getElementById("chartGrid");
+    const checkboxes = document.querySelectorAll(".symbol-checkbox");
+    const symbolInput = document.getElementById("symbolInput");
+    const intervalInput = document.getElementById("intervalInput");
+
+    let globalInterval = urlParams.get("interval") || "D";
+
+    function parseURLParams() {
+        const symbolsFromURL = urlParams.get("symbols")?.split(",") || [];
+        const additionalSymbolsFromURL = urlParams.get("additionalSymbols") || "";
+        globalInterval = urlParams.get("interval") || "D";
+
+        // Update checkboxes
+        checkboxes.forEach(cb => {
+            cb.checked = symbolsFromURL.includes(cb.value);
+        });
+
+        // Update input values
+        symbolInput.value = additionalSymbolsFromURL;
+        intervalInput.value = globalInterval;
+    }
+
+    function renderCharts() {
+        const selectedSymbols = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        const additionalSymbols = symbolInput.value
+            .split(",")
+            .map(s => s.trim())
+            .filter(s => s);
+
+        const allSymbols = [...selectedSymbols, ...additionalSymbols];
+
+        chartGrid.innerHTML = ""; // Clear previous charts
+        allSymbols.forEach(symbol => {
+            const chartContainer = document.createElement("div");
+            chartContainer.className = "tradingview-widget-container";
+            const widgetScript = document.createElement("script");
+            widgetScript.type = "text/javascript";
+            widgetScript.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+            widgetScript.innerHTML = JSON.stringify({
+                autosize: true,
+                symbol: symbol,
+                interval: globalInterval,
+                timezone: "Asia/Kolkata",
+                theme: "light",
+                locale: "en",
+                allow_symbol_change: true,
+            });
+            chartContainer.appendChild(widgetScript);
+            chartGrid.appendChild(chartContainer);
+        });
+    }
+
+    function updateURL() {
+        const selectedSymbols = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        const additionalSymbols = symbolInput.value;
+        const newURL = new URL(window.location.href);
+        newURL.searchParams.set("symbols", selectedSymbols.join(","));
+        newURL.searchParams.set("additionalSymbols", additionalSymbols);
+        newURL.searchParams.set("interval", intervalInput.value);
+
+        history.replaceState({}, "", newURL.toString());
+    }
+
+    function copyURL() {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            alert("URL copied to clipboard!");
+        });
+    }
+
+    // Event listeners
+    checkboxes.forEach(cb => cb.addEventListener("change", () => {
+        updateURL();
+        renderCharts();
+    }));
+
+    symbolInput.addEventListener("input", () => {
+        updateURL();
+        renderCharts();
+    });
+
+    intervalInput.addEventListener("input", () => {
+        globalInterval = intervalInput.value.trim() || "D";
+        updateURL();
+        renderCharts();
+    });
+
+    // Initial load
+    parseURLParams();
+    renderCharts();
+</script>
+
 </body>
 </html>
