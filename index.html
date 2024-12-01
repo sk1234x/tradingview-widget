@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TradingView Grid with Checkboxes and Input Box</title>
+    <title>TradingView Grid with Interval Customization</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -47,7 +47,7 @@
             height: 100%;
         }
 
-        .input-box {
+        .input-box, .interval-box {
             margin-top: 15px;
         }
     </style>
@@ -72,6 +72,12 @@
         <h3>Enter Additional Symbols (Comma Separated):</h3>
         <input type="text" id="symbolInput" placeholder="e.g., MEXC:DOGEUSDT.P, MEXC:SHIBUSDT.P" style="width: 100%; padding: 8px;">
     </div>
+
+    <div class="interval-box">
+        <h3>Set Global Interval:</h3>
+        <input type="text" id="intervalInput" placeholder="e.g., 1, 5, 15, 60, D, W, M" style="width: 100%; padding: 8px;">
+        <small>Available values: 1 (1 min), 5 (5 mins), 15 (15 mins), 60 (1 hour), D (daily), W (weekly), M (monthly)</small>
+    </div>
 </div>
 
 <div class="grid-container" id="chartGrid"></div>
@@ -88,11 +94,13 @@
         "MEXC:FETUSDT.P"
     ];
     const defaultSymbols = ["MEXC:BTCUSDT.P"];
+    let globalInterval = "D"; // Default interval
 
     // DOM references
     const chartGrid = document.getElementById("chartGrid");
     const checkboxes = document.querySelectorAll(".symbol-checkbox");
     const symbolInput = document.getElementById("symbolInput");
+    const intervalInput = document.getElementById("intervalInput");
 
     // Function to render charts
     function renderCharts(selectedSymbols) {
@@ -107,8 +115,8 @@
             widgetScript.innerHTML = JSON.stringify({
                 autosize: true,
                 symbol: symbol,
-                interval: "D",
-                timezone: "Etc/UTC",
+                interval: globalInterval,
+                timezone: "Asia/Kolkata",
                 theme: "light",
                 style: "1",
                 locale: "en",
@@ -127,6 +135,15 @@
 
     // Event listener for input box
     symbolInput.addEventListener("input", updateCharts);
+
+    // Event listener for interval input box
+    intervalInput.addEventListener("input", () => {
+        const newInterval = intervalInput.value.trim();
+        if (newInterval.length > 0) {
+            globalInterval = newInterval; // Update global interval
+            updateCharts();
+        }
+    });
 
     // Function to update charts based on selected checkboxes and input box
     function updateCharts() {
