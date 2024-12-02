@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TradingView Grid with Persistent State</title>
+    <title>TradingView Grid with Full Screen Feature</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -46,6 +46,31 @@
             height: 100%;
         }
 
+        .full-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .full-screen .exit-fullscreen {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: red;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+        }
+
         .input-box, .interval-box {
             margin-top: 15px;
         }
@@ -71,7 +96,7 @@
 </head>
 <body>
 
-<h1>TradingView Grid with Persistent State</h1>
+<h1>TradingView Grid with Full Screen Feature</h1>
 
 <div class="controls">
     <h3>Select Symbols to Display:</h3>
@@ -99,6 +124,12 @@
 
 <div class="grid-container" id="chartGrid"></div>
 
+<!-- Full Screen Modal -->
+<div id="fullScreenContainer" class="full-screen">
+    <button class="exit-fullscreen" onclick="exitFullScreen()">Exit Full Screen</button>
+    <div id="fullScreenChart"></div>
+</div>
+
 <script>
     const urlParams = new URLSearchParams(window.location.search);
 
@@ -106,6 +137,8 @@
     const checkboxes = document.querySelectorAll(".symbol-checkbox");
     const symbolInput = document.getElementById("symbolInput");
     const intervalInput = document.getElementById("intervalInput");
+    const fullScreenContainer = document.getElementById("fullScreenContainer");
+    const fullScreenChart = document.getElementById("fullScreenChart");
 
     let globalInterval = urlParams.get("interval") || "D";
 
@@ -114,12 +147,10 @@
         const additionalSymbolsFromURL = urlParams.get("additionalSymbols") || "";
         globalInterval = urlParams.get("interval") || "D";
 
-        // Update checkboxes
         checkboxes.forEach(cb => {
             cb.checked = symbolsFromURL.includes(cb.value);
         });
 
-        // Update input values
         symbolInput.value = additionalSymbolsFromURL;
         intervalInput.value = globalInterval;
     }
@@ -153,8 +184,37 @@
                 allow_symbol_change: true,
             });
             chartContainer.appendChild(widgetScript);
+
+            // Add Full Screen Button
+            const fullScreenButton = document.createElement("button");
+            fullScreenButton.textContent = "Full Screen";
+            fullScreenButton.onclick = () => openFullScreen(symbol);
+
+            chartContainer.appendChild(fullScreenButton);
             chartGrid.appendChild(chartContainer);
         });
+    }
+
+    function openFullScreen(symbol) {
+        fullScreenContainer.style.display = "flex";
+        fullScreenChart.innerHTML = "";
+        const widgetScript = document.createElement("script");
+        widgetScript.type = "text/javascript";
+        widgetScript.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+        widgetScript.innerHTML = JSON.stringify({
+            autosize: true,
+            symbol: symbol,
+            interval: globalInterval,
+            timezone: "Asia/Kolkata",
+            theme: "light",
+            locale: "en",
+            allow_symbol_change: true,
+        });
+        fullScreenChart.appendChild(widgetScript);
+    }
+
+    function exitFullScreen() {
+        fullScreenContainer.style.display = "none";
     }
 
     function updateURL() {
