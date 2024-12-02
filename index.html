@@ -46,25 +46,30 @@
             height: 100%;
         }
 
-        .input-box, .interval-box {
-            margin-top: 15px;
+        .fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1000;
+            background: white;
         }
 
-        .copy-url {
-            margin-top: 20px;
+        .exit-fullscreen-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px 20px;
+            background: red;
+            color: white;
+            border: none;
+            cursor: pointer;
         }
 
         @media (max-width: 768px) {
             .grid-container {
                 grid-template-columns: repeat(auto-fit, minmax(100%, 1fr));
-            }
-
-            .checkbox-list {
-                flex-direction: column;
-            }
-
-            .input-box, .interval-box {
-                margin-top: 10px;
             }
         }
     </style>
@@ -79,67 +84,24 @@
         <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:BTCUSDT.P"> MEXC:BTCUSDT.P</label>
         <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:ETHUSDT.P"> MEXC:ETHUSDT.P</label>
         <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:BNBUSDT.P"> MEXC:BNBUSDT.P</label>
-        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:SOLUSDT.P"> MEXC:SOLUSDT.P</label>
-        <label class="checkbox-item"><input type="checkbox" class="symbol-checkbox" value="MEXC:XRPUSDT.P"> MEXC:XRPUSDT.P</label>
     </div>
-
-    <div class="input-box">
-        <h3>Enter Additional Symbols (Comma Separated):</h3>
-        <input type="text" id="symbolInput" placeholder="e.g., MEXC:DOGEUSDT.P, MEXC:SHIBUSDT.P" style="width: 100%; padding: 8px;">
-    </div>
-
-    <div class="interval-box">
-        <h3>Set Global Interval:</h3>
-        <input type="text" id="intervalInput" placeholder="e.g., 1, 5, 15, 60, D, W, M" style="width: 100%; padding: 8px;">
-        <small>Available values: 1 (1 min), 5 (5 mins), 15 (15 mins), 60 (1 hour), D (daily), W (weekly), M (monthly)</small>
-    </div>
-
-    <button class="copy-url" onclick="copyURL()">Copy URL</button>
 </div>
 
 <div class="grid-container" id="chartGrid"></div>
 
 <script>
-    const urlParams = new URLSearchParams(window.location.search);
-
     const chartGrid = document.getElementById("chartGrid");
-    const checkboxes = document.querySelectorAll(".symbol-checkbox");
-    const symbolInput = document.getElementById("symbolInput");
-    const intervalInput = document.getElementById("intervalInput");
 
-    let globalInterval = urlParams.get("interval") || "D";
-
-    function parseURLParams() {
-        const symbolsFromURL = urlParams.get("symbols")?.split(",") || [];
-        const additionalSymbolsFromURL = urlParams.get("additionalSymbols") || "";
-        globalInterval = urlParams.get("interval") || "D";
-
-        // Update checkboxes
-        checkboxes.forEach(cb => {
-            cb.checked = symbolsFromURL.includes(cb.value);
-        });
-
-        // Update input values
-        symbolInput.value = additionalSymbolsFromURL;
-        intervalInput.value = globalInterval;
-    }
+    const globalInterval = "D"; // Default interval
 
     function renderCharts() {
-        const selectedSymbols = Array.from(checkboxes)
-            .filter(cb => cb.checked)
-            .map(cb => cb.value);
-
-        const additionalSymbols = symbolInput.value
-            .split(",")
-            .map(s => s.trim())
-            .filter(s => s);
-
-        const allSymbols = [...selectedSymbols, ...additionalSymbols];
-
+        const symbols = ["MEXC:BTCUSDT.P", "MEXC:ETHUSDT.P", "MEXC:BNBUSDT.P"];
         chartGrid.innerHTML = ""; // Clear previous charts
-        allSymbols.forEach(symbol => {
+
+        symbols.forEach(symbol => {
             const chartContainer = document.createElement("div");
             chartContainer.className = "tradingview-widget-container";
+
             const widgetScript = document.createElement("script");
             widgetScript.type = "text/javascript";
             widgetScript.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
@@ -152,51 +114,62 @@
                 locale: "en",
                 allow_symbol_change: true,
             });
+
+            const fullScreenBtn = document.createElement("button");
+            fullScreenBtn.textContent = "Full Screen";
+            fullScreenBtn.style.position = "absolute";
+            fullScreenBtn.style.bottom = "10px";
+            fullScreenBtn.style.right = "10px";
+            fullScreenBtn.style.padding = "5px 10px";
+            fullScreenBtn.style.zIndex = "10";
+            fullScreenBtn.style.backgroundColor = "#007bff";
+            fullScreenBtn.style.color = "white";
+            fullScreenBtn.style.border = "none";
+            fullScreenBtn.style.borderRadius = "5px";
+            fullScreenBtn.style.cursor = "pointer";
+
+            fullScreenBtn.addEventListener("click", () => enableFullScreen(chartContainer, symbol));
+
             chartContainer.appendChild(widgetScript);
+            chartContainer.appendChild(fullScreenBtn);
             chartGrid.appendChild(chartContainer);
         });
     }
 
-    function updateURL() {
-        const selectedSymbols = Array.from(checkboxes)
-            .filter(cb => cb.checked)
-            .map(cb => cb.value);
+    function enableFullScreen(chartContainer, symbol) {
+        const clone = chartContainer.cloneNode(true);
+        clone.classList.add("fullscreen");
 
-        const additionalSymbols = symbolInput.value;
-        const newURL = new URL(window.location.href);
-        newURL.searchParams.set("symbols", selectedSymbols.join(","));
-        newURL.searchParams.set("additionalSymbols", additionalSymbols);
-        newURL.searchParams.set("interval", intervalInput.value);
+        const exitButton = document.createElement("button");
+        exitButton.textContent = "Exit Full Screen";
+        exitButton.className = "exit-fullscreen-btn";
 
-        history.replaceState({}, "", newURL.toString());
-    }
-
-    function copyURL() {
-        const url = window.location.href;
-        navigator.clipboard.writeText(url).then(() => {
-            alert("URL copied to clipboard!");
+        exitButton.addEventListener("click", () => {
+            document.body.removeChild(clone);
         });
+
+        clone.appendChild(exitButton);
+        document.body.appendChild(clone);
+
+        const widgetScript = clone.querySelector("script");
+        const newWidgetScript = document.createElement("script");
+        newWidgetScript.type = "text/javascript";
+        newWidgetScript.src = widgetScript.src;
+        newWidgetScript.innerHTML = JSON.stringify({
+            autosize: true,
+            symbol: symbol,
+            interval: globalInterval,
+            timezone: "Asia/Kolkata",
+            theme: "light",
+            locale: "en",
+            allow_symbol_change: true,
+        });
+
+        const widgetContainer = clone.querySelector(".tradingview-widget-container");
+        widgetContainer.innerHTML = ""; // Clear previous content
+        widgetContainer.appendChild(newWidgetScript);
     }
 
-    // Event listeners
-    checkboxes.forEach(cb => cb.addEventListener("change", () => {
-        updateURL();
-        renderCharts();
-    }));
-
-    symbolInput.addEventListener("input", () => {
-        updateURL();
-        renderCharts();
-    });
-
-    intervalInput.addEventListener("input", () => {
-        globalInterval = intervalInput.value.trim() || "D";
-        updateURL();
-        renderCharts();
-    });
-
-    // Initial load
-    parseURLParams();
     renderCharts();
 </script>
 
